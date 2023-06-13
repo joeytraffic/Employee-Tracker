@@ -94,8 +94,29 @@ const promptUser = () => {
                   },
                 ])
                 .then((employeeData) => {
-                  console.log(employeeData);
-                  promptUser();
+                  const selectedRole = roles.find(
+                    (role) => role.title === employeeData.employeeRole
+                  );
+                  const roleId = selectedRole.id;
+
+                  const newEmployee = {
+                    first_name: employeeData.firstName,
+                    last_name: employeeData.lastName,
+                    role_id: roleId,
+                  };
+
+                  db.query(
+                    "INSERT INTO employee SET ?",
+                    newEmployee,
+                    (err, res) => {
+                      if (err) {
+                        console.error("Error inserting employee: ", err);
+                      } else {
+                        console.log("Employee added successfully!");
+                      }
+                      promptUser();
+                    }
+                  );
                 })
                 .catch((err) => {
                   console.error("Error in prompting: ", err);
@@ -134,7 +155,7 @@ const promptUser = () => {
                   console.error("Error executing the query: ", err);
                   return;
                 }
-                console.table(departments);
+                console.table(roles);
                 promptUser();
               });
             } else if (actionSelect === "Add Role") {
@@ -154,16 +175,35 @@ const promptUser = () => {
                     type: "list",
                     name: "roleDepartment",
                     message: "What department does this role belong to?",
-                    choices: roles.map((role) => role.department_name),
+                    choices: departments.map((department) => department.name),
                   },
                 ])
-                .then((roleData) => {
-                  console.log(roleData);
-                  promptUser(roles);
+                .then((answers) => {
+                  const roleName = answers.roleName;
+                  const roleSalary = answers.roleSalary;
+                  const departmentName = answers.roleDepartment;
+
+                  // Find the department ID based on the department name
+                  const department = departments.find(
+                    (department) => department.name === departmentName
+                  );
+                  const departmentId = department.id;
+
+                  const query =
+                    "INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)";
+                  const values = [roleName, roleSalary, departmentId];
+                  db.query(query, values, (err, result) => {
+                    if (err) {
+                      console.log("Error inserting role:", err);
+                    } else {
+                      console.log("New role added successfully!");
+                      promptUser();
+                    }
+                  });
                 })
                 .catch((err) => {
                   console.error("Error in prompting: ", err);
-                  promptUser(roles);
+                  promptUser();
                 });
             } else if (actionSelect === "View All Departments") {
               db.query("SELECT * FROM department", (err, departments) => {
@@ -184,8 +224,20 @@ const promptUser = () => {
                   },
                 ])
                 .then((departmentData) => {
-                  console.log(departmentData);
-                  promptUser();
+                  const { departmentName } = departmentData;
+
+                  db.query(
+                    "INSERT INTO department (name) VALUES (?)",
+                    [departmentName],
+                    (err, result) => {
+                      if (err) {
+                        console.error("Error inserting department:", err);
+                      } else {
+                        console.log("Department added successfully!");
+                      }
+                      promptUser();
+                    }
+                  );
                 })
                 .catch((err) => {
                   console.error("Error in prompting: ", err);
